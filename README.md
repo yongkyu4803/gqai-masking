@@ -83,6 +83,19 @@ python app.py
 
 schift-ko-pii는 **Schift License v2.0** (Apache 2.0 기반, 연매출 1천만 달러 이상 기업은 상업적 이용 시 별도 라이선스 필요)을 따릅니다. 연구/교육/개인 프로젝트/비영리는 항상 무료입니다.
 
+## 인용
+
+이 앱이 사용하는 모델을 인용할 때는 원저작자(Schift Inc.)가 명시한 아래 BibTeX를 사용하세요.
+
+```bibtex
+@software{schift_ko_pii_2026,
+  author = {Schift Inc.},
+  title = {schift-ko-pii: Korean PII Detection Model},
+  year = {2026},
+  url = {https://huggingface.co/schift-io/schift-ko-pii-v7},
+}
+```
+
 ## 참고
 
 - 최초 실행 시 Hugging Face에서 모델 가중치와 커스텀 모델링 코드(`modeling_lfm2_bidirectional.py`)를 자동 다운로드합니다 (trust_remote_code).
