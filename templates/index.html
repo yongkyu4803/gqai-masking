@@ -122,6 +122,16 @@
                 끄면 모델의 기본 위험도 정책(BLOCK 항목만)으로 마스킹합니다.
               </p>
             </div>
+
+            <div class="options-block">
+              <label class="toggle-row">
+                <input type="checkbox" name="markdown_mode" {% if markdown_mode %}checked{% endif %}>
+                마크다운 형식으로 처리
+              </label>
+              <p class="hint" style="margin: var(--gqai-space-1) 0 0;">
+                원문이 마크다운(제목·목록·굵게·링크 등)이면 마스킹 후 결과를 렌더링해서 보여주고, "마크다운으로 저장" 버튼으로 .md 파일 저장이 가능해집니다.
+              </p>
+            </div>
           </details>
 
           <div class="actions-row">
@@ -140,7 +150,8 @@
             {% if result and result.detections %}
             <div class="result-actions">
               <button type="button" class="btn btn-secondary btn-sm" id="copy-result">클립보드 복사</button>
-              <button type="button" class="btn btn-secondary btn-sm" id="save-result">텍스트 파일로 저장</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="save-result" data-ext="txt">텍스트 파일로 저장</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="save-result-md" data-ext="md">마크다운으로 저장</button>
             </div>
             {% endif %}
           </div>
@@ -152,18 +163,25 @@
           {% else %}
             <div id="copy-feedback" class="copy-feedback" role="status" aria-live="polite"></div>
 
-            <div class="compare-box">{{ result.masked_html }}</div>
-
-            {% if mask_style == 'redact' %}
-            <p class="hint" style="margin-top: var(--gqai-space-3);">
-              완전 마스킹에서는 출처와 무관하게 모두 검정 바로 표시됩니다. 강조 표시에 마우스를 올리면 라벨·출처를 확인할 수 있습니다.
-            </p>
+            {% if markdown_mode and result.markdown_html %}
+              <div class="md-preview">{{ result.markdown_html }}</div>
+              <p class="hint" style="margin-top: var(--gqai-space-3);">
+                마크다운으로 렌더링된 미리보기입니다. 탐지 항목별 강조 표시는 아래 "탐지된 항목" 표에서 확인하세요.
+              </p>
             {% else %}
-            <div class="legend">
-              <span class="legend-item"><span class="dot dot-model"></span>모델 탐지</span>
-              <span class="legend-item"><span class="dot dot-rule"></span>추가 규칙</span>
-              <span class="legend-item"><span class="dot dot-word"></span>사용자 단어</span>
-            </div>
+              <div class="compare-box">{{ result.masked_html }}</div>
+
+              {% if mask_style == 'redact' %}
+              <p class="hint" style="margin-top: var(--gqai-space-3);">
+                완전 마스킹에서는 출처와 무관하게 모두 검정 바로 표시됩니다. 강조 표시에 마우스를 올리면 라벨·출처를 확인할 수 있습니다.
+              </p>
+              {% else %}
+              <div class="legend">
+                <span class="legend-item"><span class="dot dot-model"></span>모델 탐지</span>
+                <span class="legend-item"><span class="dot dot-rule"></span>추가 규칙</span>
+                <span class="legend-item"><span class="dot dot-word"></span>사용자 단어</span>
+              </div>
+              {% endif %}
             {% endif %}
 
             <div class="stat-grid">
@@ -300,29 +318,37 @@
         });
       }
 
+      function saveAs(ext) {
+        if (!maskedText) return;
+        try {
+          var mime = ext === 'md' ? 'text/markdown;charset=utf-8' : 'text/plain;charset=utf-8';
+          var blob = new Blob([maskedText], { type: mime });
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          var now = new Date();
+          var pad = function (n) { return String(n).padStart(2, '0'); };
+          var stamp = now.getFullYear().toString() + pad(now.getMonth() + 1) + pad(now.getDate())
+            + '_' + pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());
+          a.href = url;
+          a.download = 'masked_result_' + stamp + '.' + ext;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          announce((ext === 'md' ? '마크다운' : '텍스트') + ' 파일로 저장했습니다.');
+        } catch (e) {
+          announce('파일 저장에 실패했습니다.');
+        }
+      }
+
       var saveBtn = document.getElementById('save-result');
       if (saveBtn) {
-        saveBtn.addEventListener('click', function () {
-          if (!maskedText) return;
-          try {
-            var blob = new Blob([maskedText], { type: 'text/plain;charset=utf-8' });
-            var url = URL.createObjectURL(blob);
-            var a = document.createElement('a');
-            var now = new Date();
-            var pad = function (n) { return String(n).padStart(2, '0'); };
-            var stamp = now.getFullYear().toString() + pad(now.getMonth() + 1) + pad(now.getDate())
-              + '_' + pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());
-            a.href = url;
-            a.download = 'masked_result_' + stamp + '.txt';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            announce('텍스트 파일로 저장했습니다.');
-          } catch (e) {
-            announce('파일 저장에 실패했습니다.');
-          }
-        });
+        saveBtn.addEventListener('click', function () { saveAs(saveBtn.dataset.ext || 'txt'); });
+      }
+
+      var saveMdBtn = document.getElementById('save-result-md');
+      if (saveMdBtn) {
+        saveMdBtn.addEventListener('click', function () { saveAs(saveMdBtn.dataset.ext || 'md'); });
       }
     })();
   </script>

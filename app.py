@@ -1,5 +1,6 @@
 import re
 
+import markdown as markdown_lib
 from flask import Flask, render_template, request
 from markupsafe import Markup, escape
 
@@ -74,6 +75,18 @@ def _render_masked(text: str, items: list, mask_style: str) -> tuple[Markup, str
     return Markup("").join(masked_parts), "".join(plain_parts)
 
 
+def _render_markdown(masked_text: str) -> Markup:
+    """마스킹된 텍스트를 마크다운 원문으로 간주해 HTML로 렌더링한다.
+
+    입력은 이 앱이 방금 만든 마스킹 결과(로컬 처리)라 외부 신뢰 불가
+    콘텐츠가 아니므로 markdown 라이브러리의 HTML 출력을 그대로 쓴다.
+    """
+    html = markdown_lib.markdown(
+        masked_text, extensions=["extra", "sane_lists", "nl2br"]
+    )
+    return Markup(html)
+
+
 @app.route("/", methods=["GET", "POST"])
 def index():
     text = ""
@@ -81,6 +94,7 @@ def index():
     custom_words_raw = ""
     exclude_words_raw = ""
     mask_style = STYLE_OPTIONS[0].id
+    markdown_mode = False
     enabled_categories = DEFAULT_ENABLED_CATEGORIES
     result = None
     error = None
@@ -90,6 +104,7 @@ def index():
         mask_all = request.form.get("mask_all") == "on"
         custom_words_raw = request.form.get("custom_words", "")
         exclude_words_raw = request.form.get("exclude_words", "")
+        markdown_mode = request.form.get("markdown_mode") == "on"
         mask_style = request.form.get("mask_style", STYLE_OPTIONS[0].id)
         if mask_style not in {o.id for o in STYLE_OPTIONS}:
             mask_style = STYLE_OPTIONS[0].id
@@ -131,10 +146,12 @@ def index():
                 items = [m for m in all_spans if (m.start, m.end) in blocked]
 
             masked_html, masked_text = _render_masked(text, items, mask_style)
+            markdown_html = _render_markdown(masked_text) if markdown_mode else None
 
             result = {
                 "masked_html": masked_html,
                 "masked_text": masked_text,
+                "markdown_html": markdown_html,
                 "detections": [
                     {
                         "label": m.label,
@@ -167,6 +184,7 @@ def index():
         exclude_words_raw=exclude_words_raw,
         mask_style=mask_style,
         style_options=STYLE_OPTIONS,
+        markdown_mode=markdown_mode,
         categories=CATEGORIES,
         enabled_categories=enabled_categories,
         result=result,
