@@ -2,6 +2,21 @@
 
 [schift-ko-pii-v7](https://huggingface.co/schift-io/schift-ko-pii-v7) 기반 한국어 개인정보(PII) 탐지/마스킹 로컬 웹앱 (Flask, GQAI 디자인 시스템 적용).
 
+## 원본 모델
+
+| 항목 | 내용 |
+|------|------|
+| 모델 | [schift-io/schift-ko-pii-v7](https://huggingface.co/schift-io/schift-ko-pii-v7) (Hugging Face) |
+| 배포처 | Schift Inc. |
+| 태스크 | Token Classification (NER 기반 PII 탐지) |
+| 아키텍처 | "hydra encoder" — 공유 하위 레이어 위에 독립적인 상위 레이어(태스크별 헤드)를 얹은 구조 |
+| 베이스 | LFM2 계열 bidirectional 인코더 (커스텀 모델링 코드 `modeling_lfm2_bidirectional.py`, 최초 실행 시 HF에서 `trust_remote_code`로 자동 다운로드) |
+| 파라미터 수 | 약 4천만(40M) |
+| 라이선스 | Schift License v2.0 (Apache 2.0 기반 + 매출 조건, 아래 "라이선스 주의" 참고) |
+| Python 패키지 | [`schift-ko-pii`](https://pypi.org/project/schift-ko-pii/) (PyPI) — 이 앱이 직접 호출하는 래퍼. 자체 정책 엔진(`policy.py`), 마스킹 전략, 확장 탐지기(`ko-pii` 어댑터)를 포함 |
+
+이 앱은 모델 자체를 재학습하거나 수정하지 않고, `schift-ko-pii` 패키지의 `analyze_text()`를 그대로 호출한다. `custom_patterns.py`의 보조 정규식 탐지기는 이 모델이 놓치는 패턴(API 키, 비밀번호, 문맥 단어 없는 URL)을 보완하기 위해 이 프로젝트에서 추가한 것이며 원본 모델의 일부가 아니다.
+
 ## 설치
 
 ```bash
