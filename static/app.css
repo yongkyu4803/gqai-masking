@@ -541,10 +541,3 @@ table.detections tr.row-unmasked td {
 }
 .site-footer-inner a:hover { color: var(--gqai-primary-deep); }
 .site-footer-inner a:focus-visible { outline: 2px solid var(--gqai-primary-deep); outline-offset: 2px; }
-
-.site-footer-inner .citation {
-  font-family: var(--gqai-font-mono);
-  font-size: 11px;
-  color: var(--gqai-ink-mute-2);
-  overflow-wrap: anywhere;
-}
