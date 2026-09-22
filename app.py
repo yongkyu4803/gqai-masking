@@ -12,6 +12,7 @@ from custom_patterns import (
     detect_custom_words,
     merge_with_model_spans,
 )
+from masking_strategies import STYLE_OPTIONS, ReplacementBuilder
 
 app = Flask(__name__)
 
@@ -42,16 +43,9 @@ def _parse_custom_words(raw: str) -> list[str]:
     return seen
 
 
-def _token_for(label: str, counters: dict[str, int]) -> str:
-    stem = label.removeprefix("private_").upper()
-    key = f"PII_{stem}"
-    counters[key] = counters.get(key, 0) + 1
-    return f"[{key}_{counters[key]}]"
-
-
-def _render_masked(text: str, items: list) -> tuple[Markup, str]:
+def _render_masked(text: str, items: list, mask_style: str) -> tuple[Markup, str]:
     """마스킹 결과를 강조 표시된 HTML과 순수 텍스트로 함께 만든다."""
-    counters: dict[str, int] = {}
+    builder = ReplacementBuilder(mask_style)
     masked_parts: list[Markup] = []
     plain_parts: list[str] = []
     cursor = 0
@@ -60,16 +54,17 @@ def _render_masked(text: str, items: list) -> tuple[Markup, str]:
         masked_parts.append(Markup(escape(text[cursor : item.start])))
         plain_parts.append(text[cursor : item.start])
 
-        token = _token_for(item.label, counters)
+        original = text[item.start : item.end]
+        replacement = builder.replacement_for(item.label, original)
         css = SOURCE_CSS[item.source]
         title = escape(f"{item.label} · {SOURCE_LABEL[item.source]}")
 
         masked_parts.append(
             Markup(f'<mark class="hl {css}" title="{title}">')
-            + escape(token)
+            + escape(replacement)
             + Markup("</mark>")
         )
-        plain_parts.append(token)
+        plain_parts.append(replacement)
         cursor = item.end
 
     masked_parts.append(Markup(escape(text[cursor:])))
@@ -84,6 +79,7 @@ def index():
     mask_all = True
     custom_words_raw = ""
     exclude_words_raw = ""
+    mask_style = STYLE_OPTIONS[0].id
     enabled_categories = DEFAULT_ENABLED_CATEGORIES
     result = None
     error = None
@@ -93,6 +89,9 @@ def index():
         mask_all = request.form.get("mask_all") == "on"
         custom_words_raw = request.form.get("custom_words", "")
         exclude_words_raw = request.form.get("exclude_words", "")
+        mask_style = request.form.get("mask_style", STYLE_OPTIONS[0].id)
+        if mask_style not in {o.id for o in STYLE_OPTIONS}:
+            mask_style = STYLE_OPTIONS[0].id
         enabled_categories = {
             c.id for c in CATEGORIES if request.form.get(f"cat_{c.id}") == "on"
         }
@@ -130,7 +129,7 @@ def index():
                 }
                 items = [m for m in all_spans if (m.start, m.end) in blocked]
 
-            masked_html, masked_text = _render_masked(text, items)
+            masked_html, masked_text = _render_masked(text, items, mask_style)
 
             result = {
                 "masked_html": masked_html,
@@ -165,6 +164,8 @@ def index():
         mask_all=mask_all,
         custom_words_raw=custom_words_raw,
         exclude_words_raw=exclude_words_raw,
+        mask_style=mask_style,
+        style_options=STYLE_OPTIONS,
         categories=CATEGORIES,
         enabled_categories=enabled_categories,
         result=result,

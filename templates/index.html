@@ -98,6 +98,22 @@
             </div>
 
             <div class="options-block">
+              <h3>마스킹 표기 방식</h3>
+              <p class="hint">탐지된 항목을 어떤 형태로 치환할지 선택합니다.</p>
+              <div class="style-list">
+                {% for s in style_options %}
+                <label class="style-item">
+                  <input type="radio" name="mask_style" value="{{ s.id }}" {% if s.id == mask_style %}checked{% endif %}>
+                  <span class="body">
+                    <span class="title">{{ s.title }}</span>
+                    <span class="desc">{{ s.description }} — 예: <code>{{ s.example }}</code></span>
+                  </span>
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="options-block">
               <label class="toggle-row">
                 <input type="checkbox" name="mask_all" {% if mask_all %}checked{% endif %}>
                 탐지된 항목 전체 마스킹
