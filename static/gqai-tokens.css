@@ -1,0 +1,47 @@
+:root {
+  --gqai-primary: #3ecf8e;
+  --gqai-primary-deep: #24b47e;
+  --gqai-primary-soft: #4ade80;
+  --gqai-accent: #a78bfa; /* Lavender violet: highlighted insights and curated content */
+
+  --gqai-canvas: #ffffff;
+  --gqai-canvas-soft: #fafafa;
+  --gqai-canvas-night: #1c1c1c;
+  --gqai-canvas-night-soft: #202020;
+
+  --gqai-hairline-cool: #ededed;
+  --gqai-hairline: #dfdfdf;
+  --gqai-hairline-strong: #c7c7c7;
+
+  --gqai-ink: #171717;
+  --gqai-ink-secondary: #212121;
+  --gqai-ink-mute: #707070;
+  --gqai-ink-mute-2: #9a9a9a;
+  --gqai-ink-faint: #b2b2b2;
+  --gqai-on-dark: #ffffff;
+
+  --gqai-font-sans: "Inter", "Noto Sans KR", sans-serif;
+  --gqai-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --gqai-space-1: 4px;
+  --gqai-space-2: 8px;
+  --gqai-space-3: 12px;
+  --gqai-space-4: 16px;
+  --gqai-space-6: 24px;
+  --gqai-space-8: 32px;
+  --gqai-space-16: 64px;
+  --gqai-space-24: 96px;
+
+  --gqai-radius-xs: 4px;
+  --gqai-radius-sm: 6px;
+  --gqai-radius-md: 8px;
+  --gqai-radius-lg: 12px;
+  --gqai-radius-xl: 16px;
+  --gqai-radius-full: 9999px;
+
+  --gqai-shadow-1: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --gqai-shadow-2: 0 8px 24px rgba(0, 0, 0, 0.08);
+  --gqai-shadow-3: 0 16px 48px rgba(0, 0, 0, 0.12);
+
+  --gqai-content-max: 1280px;
+}

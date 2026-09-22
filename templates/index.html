@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>한국어 PII 탐지 &amp; 마스킹</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Noto+Sans+KR:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='gqai-tokens.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <div class="brand">
+        <span class="mark" aria-hidden="true">🔒</span>
+        <div>
+          <span class="brand-title">한국어 PII 탐지</span>
+          <span class="brand-sub">schift-ko-pii-v7</span>
+        </div>
+      </div>
+      <button type="button" class="btn btn-secondary btn-sm" id="load-sample">샘플 불러오기</button>
+    </div>
+  </nav>
+
+  <main class="page">
+    <form method="post" novalidate>
+      <div class="app-grid">
+        <!-- 좌: 원문 -->
+        <section class="card pane" aria-labelledby="input-heading">
+          <div class="card-head">
+            <h2 id="input-heading">검사할 텍스트</h2>
+            <p class="hint">한 번에 하나의 문서 또는 문단을 붙여넣어 주세요.</p>
+          </div>
+
+          <div class="field-block">
+            <label class="field-label" for="text">원문</label>
+            <textarea
+              id="text"
+              name="text"
+              placeholder="검사할 텍스트를 입력하세요..."
+              {% if error %}aria-invalid="true" aria-describedby="text-error"{% endif %}
+            >{{ text }}</textarea>
+            {% if error %}
+              <p class="error-text" id="text-error">{{ error }}</p>
+            {% endif %}
+          </div>
+
+          <details class="options-disclosure" open>
+            <summary>탐지 옵션</summary>
+
+            <div class="options-block">
+              <h3>추가 탐지 규칙</h3>
+              <p class="hint">모델이 놓치기 쉬운 항목을 규칙으로 보완합니다.</p>
+              <div class="category-list">
+                {% for c in categories %}
+                <label class="category-item">
+                  <input
+                    type="checkbox"
+                    name="cat_{{ c.id }}"
+                    {% if c.id in enabled_categories %}checked{% endif %}
+                  >
+                  <span class="body">
+                    <span class="title">{{ c.title }}</span>
+                    <span class="desc">{{ c.description }}</span>
+                  </span>
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="options-block">
+              <label class="field-label" for="custom_words">사용자 지정 단어</label>
+              <input
+                type="text"
+                id="custom_words"
+                name="custom_words"
+                placeholder="쉼표로 구분 (예: 프로젝트코드명, 내부 서버 주소)"
+                value="{{ custom_words_raw }}"
+              >
+              <p class="hint" style="margin-top: var(--gqai-space-2);">
+                규칙에 없는 단어/구문을 텍스트에서 그대로 찾아 마스킹합니다.
+              </p>
+            </div>
+
+            <div class="options-block">
+              <label class="toggle-row">
+                <input type="checkbox" name="mask_all" {% if mask_all %}checked{% endif %}>
+                탐지된 항목 전체 마스킹
+              </label>
+              <p class="hint" style="margin: var(--gqai-space-1) 0 0;">
+                끄면 모델의 기본 위험도 정책(BLOCK 항목만)으로 마스킹합니다.
+              </p>
+            </div>
+          </details>
+
+          <div class="actions-row">
+            <span class="hint" style="margin: 0;">모델 탐지는 항상 기본 적용됩니다.</span>
+            <button type="submit" class="btn btn-primary">분석하기</button>
+          </div>
+        </section>
+
+        <!-- 우: 결과 -->
+        <section class="card pane" aria-labelledby="result-heading">
+          <div class="card-head result-head">
+            <div>
+              <h2 id="result-heading">결과</h2>
+              <p class="hint">강조 표시에 마우스를 올리면 라벨이 보입니다.</p>
+            </div>
+            {% if result and result.detections %}
+            <div class="result-actions">
+              <button type="button" class="btn btn-secondary btn-sm" id="copy-result">클립보드 복사</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="save-result">텍스트 파일로 저장</button>
+            </div>
+            {% endif %}
+          </div>
+
+          {% if not result %}
+            <div class="empty-state result-empty">
+              왼쪽에 텍스트를 입력하고 <strong>분석하기</strong>를 누르면<br>마스킹 결과가 여기에 표시됩니다.
+            </div>
+          {% else %}
+            <div id="copy-feedback" class="copy-feedback" role="status" aria-live="polite"></div>
+
+            <div class="compare-box">{{ result.masked_html }}</div>
+
+            <div class="legend">
+              <span class="legend-item"><span class="dot dot-model"></span>모델 탐지</span>
+              <span class="legend-item"><span class="dot dot-rule"></span>추가 규칙</span>
+              <span class="legend-item"><span class="dot dot-word"></span>사용자 단어</span>
+            </div>
+
+            <div class="stat-grid">
+              <div class="stat">
+                <div class="value">{{ result.summary.total }}</div>
+                <div class="label">마스킹된 항목</div>
+              </div>
+              <div class="stat">
+                <div class="value">{{ result.summary.from_model }}</div>
+                <div class="label">모델</div>
+              </div>
+              <div class="stat">
+                <div class="value">{{ result.summary.from_rules }}</div>
+                <div class="label">추가 규칙</div>
+              </div>
+              <div class="stat">
+                <div class="value">{{ result.summary.from_words }}</div>
+                <div class="label">사용자 단어</div>
+              </div>
+            </div>
+          {% endif %}
+        </section>
+      </div>
+    </form>
+
+    {% if result %}
+      <section class="card" aria-labelledby="detections-heading">
+        <div class="card-head">
+          <h2 id="detections-heading">탐지된 항목</h2>
+        </div>
+        {% if result.detections %}
+        <table class="detections">
+          <thead>
+            <tr><th>라벨</th><th>값</th><th>신뢰도</th><th>출처</th><th>마스킹</th></tr>
+          </thead>
+          <tbody>
+            {% for d in result.detections %}
+            <tr class="{% if not d.masked %}row-unmasked{% endif %}">
+              <td><span class="badge">{{ d.label }}</span></td>
+              <td>{{ d.value }}</td>
+              <td>{{ d.score if d.score is not none else '—' }}</td>
+              <td>
+                <span class="badge">
+                  <span class="badge-dot {{ d.source_dot }}"></span>
+                  {{ d.source }}
+                </span>
+              </td>
+              <td>{{ '마스킹됨' if d.masked else '미적용' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+          <div class="empty-state">탐지된 개인정보가 없습니다.</div>
+        {% endif %}
+      </section>
+    {% endif %}
+
+    <p class="footer-note">
+      규칙 기반 보조 탐지는 정해진 패턴에만 반응합니다. 새로운 유형이 계속 놓쳐진다면 추가 규칙 또는 사용자 지정 단어로 보완하세요.
+    </p>
+  </main>
+
+  <script id="sample-text" type="application/json">{{ sample_text | tojson }}</script>
+  {% if result %}
+  <script id="masked-text-data" type="application/json">{{ result.masked_text | tojson }}</script>
+  {% endif %}
+
+  <script>
+    (function () {
+      var loadBtn = document.getElementById('load-sample');
+      var textarea = document.getElementById('text');
+      var sampleEl = document.getElementById('sample-text');
+      var sample = sampleEl ? JSON.parse(sampleEl.textContent || '""') : '';
+      if (loadBtn && textarea) {
+        loadBtn.addEventListener('click', function () {
+          if (!sample) return;
+          textarea.value = sample;
+          textarea.focus();
+        });
+      }
+
+      var maskedEl = document.getElementById('masked-text-data');
+      var maskedText = maskedEl ? JSON.parse(maskedEl.textContent || '""') : '';
+      var feedback = document.getElementById('copy-feedback');
+
+      function announce(message) {
+        if (!feedback) return;
+        feedback.textContent = message;
+        window.clearTimeout(announce._t);
+        announce._t = window.setTimeout(function () {
+          feedback.textContent = '';
+        }, 2500);
+      }
+
+      var copyBtn = document.getElementById('copy-result');
+      if (copyBtn) {
+        copyBtn.addEventListener('click', function () {
+          if (!maskedText) return;
+          var done = function () { announce('클립보드에 복사했습니다.'); };
+          var fail = function () {
+            try {
+              var ta = document.createElement('textarea');
+              ta.value = maskedText;
+              ta.style.position = 'fixed';
+              ta.style.opacity = '0';
+              document.body.appendChild(ta);
+              ta.focus();
+              ta.select();
+              document.execCommand('copy');
+              document.body.removeChild(ta);
+              done();
+            } catch (e) {
+              announce('복사에 실패했습니다. 직접 선택해 복사해 주세요.');
+            }
+          };
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(maskedText).then(done, fail);
+          } else {
+            fail();
+          }
+        });
+      }
+
+      var saveBtn = document.getElementById('save-result');
+      if (saveBtn) {
+        saveBtn.addEventListener('click', function () {
+          if (!maskedText) return;
+          try {
+            var blob = new Blob([maskedText], { type: 'text/plain;charset=utf-8' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            var now = new Date();
+            var pad = function (n) { return String(n).padStart(2, '0'); };
+            var stamp = now.getFullYear().toString() + pad(now.getMonth() + 1) + pad(now.getDate())
+              + '_' + pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());
+            a.href = url;
+            a.download = 'masked_result_' + stamp + '.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            announce('텍스트 파일로 저장했습니다.');
+          } catch (e) {
+            announce('파일 저장에 실패했습니다.');
+          }
+        });
+      }
+    })();
+  </script>
+</body>
+</html>
