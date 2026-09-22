@@ -514,3 +514,37 @@ table.detections tr.row-unmasked td {
   margin-top: var(--gqai-space-6);
   word-break: keep-all;
 }
+
+/* ---- Site footer: 모델 출처/인용 ---- */
+
+.site-footer {
+  border-top: 1px solid var(--gqai-hairline-cool);
+  margin-top: var(--gqai-space-16);
+}
+
+.site-footer-inner {
+  max-width: var(--gqai-content-max);
+  margin: 0 auto;
+  padding: var(--gqai-space-6);
+  color: var(--gqai-ink-mute);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.site-footer-inner p { margin: 0 0 var(--gqai-space-1); }
+.site-footer-inner p:last-child { margin-bottom: 0; }
+
+.site-footer-inner a {
+  color: var(--gqai-ink-secondary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.site-footer-inner a:hover { color: var(--gqai-primary-deep); }
+.site-footer-inner a:focus-visible { outline: 2px solid var(--gqai-primary-deep); outline-offset: 2px; }
+
+.site-footer-inner .citation {
+  font-family: var(--gqai-font-mono);
+  font-size: 11px;
+  color: var(--gqai-ink-mute-2);
+  overflow-wrap: anywhere;
+}

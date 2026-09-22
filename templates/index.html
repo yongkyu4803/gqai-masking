@@ -191,6 +191,19 @@
     </p>
   </main>
 
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <p>
+        탐지 모델:
+        <a href="https://huggingface.co/schift-io/schift-ko-pii-v7" target="_blank" rel="noopener noreferrer">schift-ko-pii-v7</a>
+        (Schift Inc., Schift License v2.0)
+      </p>
+      <p class="citation">
+        @software{schift_ko_pii_2026, author = {Schift Inc.}, title = {schift-ko-pii: Korean PII Detection Model}, year = {2026}, url = {https://huggingface.co/schift-io/schift-ko-pii-v7}}
+      </p>
+    </div>
+  </footer>
+
   <script id="sample-text" type="application/json">{{ sample_text | tojson }}</script>
   {% if result %}
   <script id="masked-text-data" type="application/json">{{ result.masked_text | tojson }}</script>
