@@ -7,7 +7,7 @@
 | 항목 | 내용 |
 |------|------|
 | 모델 | [schift-io/schift-ko-pii-v7](https://huggingface.co/schift-io/schift-ko-pii-v7) (Hugging Face) |
-| 배포처 | Schift Inc. |
+| 배포처 | Schift, Inc. (Room821 Co., Ltd.) |
 | 태스크 | Token Classification (NER 기반 PII 탐지) |
 | 아키텍처 | "hydra encoder" — 공유 하위 레이어 위에 독립적인 상위 레이어(태스크별 헤드)를 얹은 구조 |
 | 베이스 | LFM2 계열 bidirectional 인코더 (커스텀 모델링 코드 `modeling_lfm2_bidirectional.py`, 최초 실행 시 HF에서 `trust_remote_code`로 자동 다운로드) |
@@ -81,7 +81,9 @@ python app.py
 
 ## 라이선스 주의
 
-schift-ko-pii는 **Schift License v2.0** (Apache 2.0 기반, 연매출 1천만 달러 이상 기업은 상업적 이용 시 별도 라이선스 필요)을 따릅니다. 연구/교육/개인 프로젝트/비영리는 항상 무료입니다.
+- 저작권: **Copyright (c) 2026 Schift, Inc. (Room821 Co., Ltd.)**
+- 라이선스: **Schift License v2.0** ([전문](https://huggingface.co/schift-io/schift-ko-pii-v7/blob/main/LICENSE), Apache 2.0 기반). 연매출 1천만 달러(USD 10,000,000)를 초과하는 법인은 상업적 이용 시 별도 라이선스가 필요합니다 — 문의: hello@schift.io. 연구/교육/평가/개인 프로젝트/비영리 이용은 매출 규모와 무관하게 항상 허용됩니다.
+- 이 앱은 `schift-ko-pii` 패키지를 `pip install`로 의존성으로만 사용하며, 모델 소스코드나 가중치를 이 저장소에 복사·재배포하지 않습니다. 따라서 Apache 2.0 4조(재배포 시 LICENSE 사본 동봉, 변경 파일 고지, NOTICE 파일 전달)는 이 저장소에 적용되지 않습니다.
 
 ## 인용
 
