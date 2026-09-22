@@ -406,6 +406,19 @@ textarea[aria-invalid="true"] {
 .hl-rule { background: rgba(167, 139, 250, 0.18); border-bottom: 2px solid var(--gqai-accent); }
 .hl-word { background: rgba(112, 112, 112, 0.14); border-bottom: 2px solid var(--gqai-ink-mute); }
 
+/* 완전 마스킹: 실제 문서 먹칠처럼 배경과 글자를 모두 검게 칠해
+   내용을 화면에서 읽을 수 없게 한다. 텍스트 노드 자체는 남겨둬서
+   스크린리더·클립보드 복사(전용 버튼 경유)는 정상 동작한다. */
+.hl-redact {
+  background: #000;
+  color: #000;
+  border-bottom: none;
+  border-radius: 2px;
+  text-shadow: none;
+  -webkit-text-fill-color: #000;
+}
+.hl-redact::selection { background: #000; color: #000; }
+
 .legend {
   display: flex;
   flex-wrap: wrap;

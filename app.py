@@ -12,7 +12,7 @@ from custom_patterns import (
     detect_custom_words,
     merge_with_model_spans,
 )
-from masking_strategies import STYLE_OPTIONS, ReplacementBuilder
+from masking_strategies import STYLE_OPTIONS, MaskStyle, ReplacementBuilder
 
 app = Flask(__name__)
 
@@ -56,7 +56,8 @@ def _render_masked(text: str, items: list, mask_style: str) -> tuple[Markup, str
 
         original = text[item.start : item.end]
         replacement = builder.replacement_for(item.label, original)
-        css = SOURCE_CSS[item.source]
+        # 완전 마스킹은 출처색 대신 검정 바로 통일 표시한다(먹칠 표현).
+        css = "hl-redact" if builder.style is MaskStyle.REDACT else SOURCE_CSS[item.source]
         title = escape(f"{item.label} · {SOURCE_LABEL[item.source]}")
 
         masked_parts.append(

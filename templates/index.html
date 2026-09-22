@@ -154,11 +154,17 @@
 
             <div class="compare-box">{{ result.masked_html }}</div>
 
+            {% if mask_style == 'redact' %}
+            <p class="hint" style="margin-top: var(--gqai-space-3);">
+              완전 마스킹에서는 출처와 무관하게 모두 검정 바로 표시됩니다. 강조 표시에 마우스를 올리면 라벨·출처를 확인할 수 있습니다.
+            </p>
+            {% else %}
             <div class="legend">
               <span class="legend-item"><span class="dot dot-model"></span>모델 탐지</span>
               <span class="legend-item"><span class="dot dot-rule"></span>추가 규칙</span>
               <span class="legend-item"><span class="dot dot-word"></span>사용자 단어</span>
             </div>
+            {% endif %}
 
             <div class="stat-grid">
               <div class="stat">
