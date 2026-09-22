@@ -1,8 +1,12 @@
 """마스킹 표기 방식 4종.
 
 - token: 기존 방식. `[PII_PERSON_1]`처럼 라벨+순번으로 표기.
-- symbol: 법원 판결문/공문서에서 흔히 쓰는 방식. 문자를 ○로 치환하되
-  구분 기호(-, ., @, /, 공백 등)는 유지해 형태만 남긴다.
+- court: 대법원 「판결서 등의 열람 및 복사를 위한 비실명 처리 기준」
+  (재일 2014-2)을 따른 방식. 제5조①(성명 → 알파벳 대문자),
+  제7조(주소의 시·군·구 이후 → 알파벳 대문자), 제8조①(계좌번호 등
+  식별 숫자 → 고유 알파벳 대문자), 제8조②(주민등록번호 → 완전 삭제)
+  에 근거한다. "○○○" 표기는 언론 등에서 쓰는 관행일 뿐 이 예규의
+  공식 표기가 아니므로 사용하지 않는다.
 - pseudonym: 그럴듯한 가짜 값으로 치환한다. 같은 원문은 문서 내에서
   항상 같은 가명으로 치환되어(캐시), 문맥상 동일 인물/값임을 알아볼
   수 있으면서도 실제 값은 드러나지 않는다.
@@ -12,13 +16,14 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from enum import Enum
 
 
 class MaskStyle(str, Enum):
     TOKEN = "token"
-    SYMBOL = "symbol"
+    COURT = "court"
     PSEUDONYM = "pseudonym"
     REDACT = "redact"
 
@@ -39,10 +44,10 @@ STYLE_OPTIONS: tuple[StyleOption, ...] = (
         "[PII_PERSON_1]",
     ),
     StyleOption(
-        MaskStyle.SYMBOL.value,
-        "특수기호 (법원식)",
-        "글자를 ○로 치환, 구분 기호는 유지",
-        "○○○",
+        MaskStyle.COURT.value,
+        "법원식 (비실명 처리 예규)",
+        "고유 알파벳 대문자 부여(A, B, C...), 주민등록번호는 완전 삭제",
+        "A",
     ),
     StyleOption(
         MaskStyle.PSEUDONYM.value,
@@ -58,7 +63,20 @@ STYLE_OPTIONS: tuple[StyleOption, ...] = (
     ),
 )
 
-_KEEP_CHARS = set("-./@() 　")
+# 주민등록번호 형식(예: 850205-1234567). 라벨과 무관하게 값 자체가
+# 이 형태와 일치하면 예규 제8조②에 따라 완전 삭제한다.
+_RRN_PATTERN = re.compile(r"^\d{6}-[1-4]\d{6}$")
+
+
+def _next_letter(index: int) -> str:
+    """1→A, 2→B, ..., 26→Z, 27→AA, 28→AB... (엑셀 열 이름과 동일한 규칙)."""
+    letters = []
+    n = index
+    while n > 0:
+        n, rem = divmod(n - 1, 26)
+        letters.append(chr(ord("A") + rem))
+    return "".join(reversed(letters))
+
 
 _PSEUDONYM_POOL_PERSON = (
     "김도윤", "이서연", "박하람", "최지훈", "정은우",
@@ -71,10 +89,6 @@ _PSEUDONYM_POOL_ADDRESS = (
     "인천광역시 미추홀구 인주대로 200",
     "광주광역시 동구 금남로 10",
 )
-
-
-def _symbol_replace(text: str) -> str:
-    return "".join(ch if ch in _KEEP_CHARS else "○" for ch in text)
 
 
 def _build_pseudonym(label: str, index: int) -> str:
@@ -107,6 +121,8 @@ class ReplacementBuilder:
         self._token_counters: dict[str, int] = {}
         self._pseudonym_counters: dict[str, int] = {}
         self._pseudonym_cache: dict[tuple[str, str], str] = {}
+        self._court_cache: dict[str, str] = {}
+        self._court_next_index = 1
 
     def replacement_for(self, label: str, original: str) -> str:
         if self.style is MaskStyle.TOKEN:
@@ -115,8 +131,18 @@ class ReplacementBuilder:
             self._token_counters[key] = self._token_counters.get(key, 0) + 1
             return f"[{key}_{self._token_counters[key]}]"
 
-        if self.style is MaskStyle.SYMBOL:
-            return _symbol_replace(original)
+        if self.style is MaskStyle.COURT:
+            # 제8조②: 주민등록번호 형식은 완전 삭제
+            if _RRN_PATTERN.match(original.strip()):
+                return ""
+            # 제5조①/제7조/제8조①: 값마다 고유 알파벳 대문자, 동일 원문 재사용
+            cache_key = original.strip().lower()
+            if cache_key in self._court_cache:
+                return self._court_cache[cache_key]
+            letter = _next_letter(self._court_next_index)
+            self._court_next_index += 1
+            self._court_cache[cache_key] = letter
+            return letter
 
         if self.style is MaskStyle.REDACT:
             return "[REDACTED]"
