@@ -84,6 +84,20 @@
             </div>
 
             <div class="options-block">
+              <label class="field-label" for="exclude_words">제외 단어</label>
+              <input
+                type="text"
+                id="exclude_words"
+                name="exclude_words"
+                placeholder="쉼표로 구분 (예: 대외비, 회사명)"
+                value="{{ exclude_words_raw }}"
+              >
+              <p class="hint" style="margin-top: var(--gqai-space-2);">
+                모델/규칙이 반복적으로 잘못 탐지(오탐)하는 값을 입력하면 마스킹 대상에서 제외합니다.
+              </p>
+            </div>
+
+            <div class="options-block">
               <label class="toggle-row">
                 <input type="checkbox" name="mask_all" {% if mask_all %}checked{% endif %}>
                 탐지된 항목 전체 마스킹

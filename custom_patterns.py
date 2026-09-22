@@ -18,6 +18,11 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+try:
+    from ko_pii.patterns.rrn import detect as _detect_rrn
+except ImportError:  # extended 의존성 미설치 시
+    _detect_rrn = None
+
 
 @dataclass(frozen=True)
 class CustomSpan:
@@ -37,6 +42,11 @@ CATEGORIES: tuple[Category, ...] = (
     Category("password", "비밀번호", "'비밀번호는 ...', 'password: ...' 형태의 값"),
     Category("api_key", "API 키 / 토큰", "sk-, ghp_, AIza 등 알려진 접두사 + 문맥 단어 뒤 토큰"),
     Category("url", "일반 URL / 도메인", "문맥 단어 없는 순수 도메인 (예: example.com/path)"),
+    Category(
+        "rrn",
+        "주민등록번호",
+        "체크섬·생년월일 검증 정규식. 모델이 긴 문서에서 청크 경계 때문에 놓친 경우를 보완",
+    ),
 )
 
 # (카테고리 id, 라벨, 정규식, 마스킹할 group 번호 — None이면 전체 매치)
@@ -97,6 +107,11 @@ def detect_custom(text: str, enabled_categories: set[str]) -> list[CustomSpan]:
             if start == -1:
                 continue
             spans.append(CustomSpan(start, end, label))
+
+    if "rrn" in enabled_categories and _detect_rrn is not None:
+        for r in _detect_rrn(text):
+            spans.append(CustomSpan(r.start, r.end, "account_number"))
+
     return _drop_overlaps(spans)
 
 
@@ -157,3 +172,22 @@ def merge_with_model_spans(
                 occupied.append((span.start, span.end))
 
     return sorted(merged, key=lambda m: m.start)
+
+
+def apply_exclusions(
+    text: str, spans: list[MergedSpan], excluded_words: list[str]
+) -> list[MergedSpan]:
+    """모델/규칙이 오탐한 값을 사용자가 텍스트로 직접 제외한다.
+
+    구간의 실제 텍스트가 제외 단어 중 하나와 대소문자 무시하고 완전히
+    일치하면 결과에서 뺀다. 모델 정밀도 자체를 고칠 수는 없으므로, 반복
+    적으로 잘못 잡히는 값을 사람이 검수해 걸러내는 최후 수단이다.
+    """
+    if not excluded_words:
+        return spans
+    excluded_lower = {w.strip().lower() for w in excluded_words if w.strip()}
+    if not excluded_lower:
+        return spans
+    return [
+        m for m in spans if text[m.start : m.end].strip().lower() not in excluded_lower
+    ]

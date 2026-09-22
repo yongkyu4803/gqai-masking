@@ -7,6 +7,7 @@ from schift_ko_pii import Action, AnalysisConfig, ProcessingMode, analyze_text
 
 from custom_patterns import (
     CATEGORIES,
+    apply_exclusions,
     detect_custom,
     detect_custom_words,
     merge_with_model_spans,
@@ -82,6 +83,7 @@ def index():
     text = ""
     mask_all = True
     custom_words_raw = ""
+    exclude_words_raw = ""
     enabled_categories = DEFAULT_ENABLED_CATEGORIES
     result = None
     error = None
@@ -90,6 +92,7 @@ def index():
         text = request.form.get("text", "")
         mask_all = request.form.get("mask_all") == "on"
         custom_words_raw = request.form.get("custom_words", "")
+        exclude_words_raw = request.form.get("exclude_words", "")
         enabled_categories = {
             c.id for c in CATEGORIES if request.form.get(f"cat_{c.id}") == "on"
         }
@@ -114,6 +117,8 @@ def index():
             all_spans = merge_with_model_spans(
                 text, model_spans, category_spans, word_spans
             )
+            exclude_words = _parse_custom_words(exclude_words_raw)
+            all_spans = apply_exclusions(text, all_spans, exclude_words)
 
             if mask_all:
                 items = all_spans
@@ -159,6 +164,7 @@ def index():
         text=text,
         mask_all=mask_all,
         custom_words_raw=custom_words_raw,
+        exclude_words_raw=exclude_words_raw,
         categories=CATEGORIES,
         enabled_categories=enabled_categories,
         result=result,
